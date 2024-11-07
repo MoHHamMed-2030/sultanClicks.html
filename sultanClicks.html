@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="image.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نقرات السلطان</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="w-full min-h-screen bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-400 p-2 sm:p-4 md:p-8 text-white text-center">
+
+    <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold pt-2 sm:pt-4 mb-4 sm:mb-8">
+        نقرات السلطان
+    </h1>
+
+    <div id="game" class="flex flex-col md:flex-row gap-4">
+        <div class="flex-1 bg-white p-4 sm:p-6 rounded-lg shadow-md text-yellow-700">
+            <h2 class="text-xl sm:text-2xl font-bold mb-2 sm:mb-4">
+                الذهب: <span id="gold-count">0</span>
+            </h2>
+            <button id="click-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-lg sm:text-xl mb-4 sm:mb-6 transition duration-300 transform hover:scale-105">
+                انقر لجمع الذهب
+            </button>
+
+            <div id="prestige-options" class="mb-4 sm:mb-6 flex flex-wrap gap-2 justify-center hidden">
+                <button id="prestige-cost" class="bg-purple-600 hover:bg-purple-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded transition duration-300 text-sm sm:text-base">
+                    ترقية المستوى (تخفيض التكاليف)
+                </button>
+                <button id="prestige-power" class="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded transition duration-300 text-sm sm:text-base">
+                    ترقية المستوى (زيادة القوة)
+                </button>
+            </div>
+
+            <div id="upgrades" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4"></div>
+           <br>
+            <button id="buy-miner" class="text-white bg-gray-400 cursor-not-allowed px-2 sm:px-4 py-2 rounded transition duration-300 text-sm sm:text-base" disabled>
+                شراء جامع ذهب تلقائي (التكلفة: 1000)
+            </button>
+
+            <div class="mt-4 sm:mt-6 text-gray-700 text-sm sm:text-base">
+                <p>قوة النقر: <span id="click-power-display">1</span></p>
+                <p>عدد جامعي الذهب التلقائيين: <span id="auto-miners">0</span></p>
+                <p>المستوى: <span id="prestige-level">0</span></p>
+                <p>مضاعف تكلفة الترقية: <span id="upgrade-cost-multiplier">1.00</span></p>
+                <p>مضاعف قوة النقر: <span id="click-power-multiplier">1.00</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gold = parseInt(localStorage.getItem("gold")) || 0;
+        let clickPower = parseInt(localStorage.getItem("clickPower")) || 1;
+        let prestige = parseInt(localStorage.getItem("prestige")) || 0;
+        let autoMiners = parseInt(localStorage.getItem("autoMiners")) || 0;
+        let upgradeCostMultiplier = parseFloat(localStorage.getItem("upgradeCostMultiplier")) || 1;
+        let clickPowerMultiplier = parseFloat(localStorage.getItem("clickPowerMultiplier")) || 1;
+        const prestigeGoal = 1000000000;
+        const endGameGoal = 1000000000000;
+        const baseUpgradeCosts = {
+            1: 50,
+            5: 250,
+            10: 500,
+            50: 2500,
+            100: 5000,
+            500: 25000,
+            1000: 50000,
+            5000: 250000,
+            10000: 1000000
+        };
+        const autoMinerCost = 1000;
+
+        function updateDisplay() {
+            document.getElementById("gold-count").textContent = gold.toLocaleString();
+            document.getElementById("click-power-display").textContent = (clickPower * clickPowerMultiplier).toFixed(2);
+            document.getElementById("auto-miners").textContent = autoMiners;
+            document.getElementById("prestige-level").textContent = prestige;
+            document.getElementById("upgrade-cost-multiplier").textContent = upgradeCostMultiplier.toFixed(2);
+            document.getElementById("click-power-multiplier").textContent = clickPowerMultiplier.toFixed(2);
+        }
+
+        function saveGameState() {
+            localStorage.setItem("gold", gold.toString());
+            localStorage.setItem("clickPower", clickPower.toString());
+            localStorage.setItem("prestige", prestige.toString());
+            localStorage.setItem("autoMiners", autoMiners.toString());
+            localStorage.setItem("upgradeCostMultiplier", upgradeCostMultiplier.toString());
+            localStorage.setItem("clickPowerMultiplier", clickPowerMultiplier.toString());
+        }
+
+        for (let amount in baseUpgradeCosts) {
+            const button = document.createElement("button");
+            button.textContent = `ترقية +${amount} (التكلفة: ${baseUpgradeCosts[amount]})`;
+            button.classList.add("bg-green-500", "hover:bg-green-600", "text-white", "px-2", "sm:px-4", "py-2", "rounded", "transition", "duration-300", "text-sm", "sm:text-base");
+            button.onclick = () => upgradeClickPower(parseInt(amount));
+            document.getElementById("upgrades").appendChild(button);
+        }
+
+        document.getElementById("click-btn").addEventListener("click", function() {
+            gold += clickPower * clickPowerMultiplier * (1 + prestige * 0.1);
+            saveGameState();
+            updateDisplay();
+            if (gold >= prestigeGoal) {
+                document.getElementById("prestige-options").classList.remove("hidden");
+            }
+        });
+
+        document.getElementById("buy-miner").addEventListener("click", function() {
+            if (gold >= autoMinerCost) {
+                gold -= autoMinerCost;
+                autoMiners += 1;
+                saveGameState();
+                updateDisplay();
+            }
+        });
+
+        document.getElementById("prestige-cost").addEventListener("click", function() {
+            performPrestige("cost");
+        });
+        document.getElementById("prestige-power").addEventListener("click", function() {
+            performPrestige("power");
+        });
+
+        function performPrestige(choice) {
+            if (gold >= prestigeGoal) {
+                prestige += 1;
+                gold = 0;
+                clickPower = 1;
+                autoMiners = 0;
+                if (choice === "cost") {
+                    upgradeCostMultiplier *= 0.9;
+                } else if (choice === "power") {
+                    clickPowerMultiplier *= 1.1;
+                }
+                saveGameState();
+                updateDisplay();
+                document.getElementById("prestige-options").classList.add("hidden");
+            }
+        }
+
+        function upgradeClickPower(amount) {
+            const cost = Math.floor(baseUpgradeCosts[amount] * upgradeCostMultiplier);
+            if (gold >= cost) {
+                gold -= cost;
+                clickPower += amount;
+                saveGameState();
+                updateDisplay();
+            }
+        }
+
+        setInterval(() => {
+            gold += autoMiners * clickPower * clickPowerMultiplier;
+            saveGameState();
+            updateDisplay();
+        }, 1000);
+
+        updateDisplay();
+    </script>
+
+</body>
+</html>
